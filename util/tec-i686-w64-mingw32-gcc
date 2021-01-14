@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+# Usage: tec-i686-w64-mingw32-gcc <file>.c -o a.out
+
+cc=$(which i686-w64-mingw32-gcc)
+tec=$(which tec)
+file="$1"
+
+shift
+
+"$cc" -E "$file" | "$tec" | "$cc" -xc - "$@"
