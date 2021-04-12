@@ -116,7 +116,7 @@ The code after processing by the TEC will look like this:
 
 ## Supported compilers
 
-TEC can work with the following compilers C compilers:
+TEC can work with the following compilers:
 * GCC
 * Clang
 * MinGW
@@ -124,6 +124,7 @@ TEC can work with the following compilers C compilers:
 ## Supported systems
 * GNU/Linux
 * FreeBSD
+* macOS
 * Windows 7 and above
 
 
