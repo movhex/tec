@@ -2,10 +2,10 @@
 
 # Usage: tec-gcc <file>.c -o a.out
 
-cc=$(which gcc)
-tec=$(which tec)
-file="$1"
+CC=$(which gcc)
+TEC=$(which tec)
+FILE="$1"
 
 shift
 
-"$cc" -E "$file" | "$tec" | "$cc" -xc - "$@"
+"$CC" -E "$FILE" | "$TEC" - | "$TEC" -xc - "$@"

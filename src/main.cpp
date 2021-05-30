@@ -41,10 +41,10 @@
 #include "version.h"
 
 
-bool read_from_file;
-bool write_to_file;
+bool read_from_file = true;
+bool specify_output_file = false;
 
-std::string input_filename;
+std::vector<std::string> input_filenames;
 std::string output_filename;
 
 
@@ -52,6 +52,7 @@ static void showVersionInfo(void)
 {
     std::cout << "tec " << TEC_VERSION_STR << " " << TEC_VERSION_DATE << std::endl;
 }
+
 
 static void showHelpInfo(void)
 {
@@ -63,9 +64,9 @@ static void showHelpInfo(void)
         << "Options:" << std::endl
         << "  -h, --help                Displays this message." << std::endl
         << "  -v, --version             Displays version information." << std::endl
-        << "  -i <file>                 Read input from file rather than stdin." << std::endl
-        << "  -o <file>                 Write output to file rather than stdout." << std::endl;
+        << "  -o <file>                 Specify output file name." << std::endl;
 }
+
 
 static int runTec(const std::vector<std::string> &args)
 {
@@ -79,11 +80,13 @@ static int runTec(const std::vector<std::string> &args)
             showHelpInfo();
             return EXIT_SUCCESS;
         }
-        else if (args[opt] == "-i") {
-
+        else if (args[opt] == "-") {
+            read_from_file = false;
+        }
+        else if (args[opt] == "-o") {
             if (++opt < args.size()) {
-                input_filename = args[opt];
-                read_from_file = true;
+                output_filename = args[opt];
+                specify_output_file = true;
             }
             else {
                 std::cerr << "Missing argument for option: \"" << args[--opt]
@@ -91,30 +94,42 @@ static int runTec(const std::vector<std::string> &args)
                 showHelpInfo();
                 return EXIT_FAILURE;
             }
-        }
-        else if (args[opt] == "-o") {
-
-            if (++opt < args.size()) {
-                output_filename = args[opt];
-                write_to_file = true;
-            }
-            else {
-                std::cerr << "Missing argument for option: \"" << args[--opt]
-                    << "\"" << std::endl;
+            if (input_filenames.size() > 1) {
+                std::cerr << "Cannot specify -o when generating multiple output files" << std::endl;
                 showHelpInfo();
                 return EXIT_FAILURE;
             }
         }
         else {
-            std::cerr << "Unknown option: \"" << args[opt] << "\"" << std::endl;
-            showHelpInfo();
-            return EXIT_FAILURE;
+            input_filenames.push_back(args[opt]);
+            if (specify_output_file && input_filenames.size() > 1) {
+                std::cerr << "Cannot specify -o when generating multiple output files" << std::endl;
+                showHelpInfo();
+                return EXIT_FAILURE;
+            }
         }
     }
 
     std::string data;
 
-    if (read_from_file) {
+    Tec::Preprocessor pp;
+
+    if (!read_from_file) {
+
+        data.assign(std::istreambuf_iterator<char>(std::cin), std::istreambuf_iterator<char>());
+
+        try {
+            pp.parse(data);
+            pp.generate(std::cout);
+        }
+        catch (const Tec::SyntaxException &e) {
+            std::cerr << e.what() << std::endl;
+        }
+        return EXIT_SUCCESS;
+    }
+
+
+    for (const auto &input_filename : input_filenames) {
 
         std::ifstream input_file;
 
@@ -124,29 +139,22 @@ static int runTec(const std::vector<std::string> &args)
             std::cerr << "Failed to open file \"" << input_filename << "\"" << std::endl;
             return EXIT_FAILURE;
         }
-
         data.assign(std::istreambuf_iterator<char>(input_file), std::istreambuf_iterator<char>());
-    }
-    else {
-        data.assign(std::istreambuf_iterator<char>(std::cin), std::istreambuf_iterator<char>());
-    }
 
-    Tec::Preprocessor pp;
+        try {
+            pp.parse(data);
 
-    try {
+            if (!specify_output_file) {
+                output_filename = "tec_" + input_filename;
+            }
 
-        pp.parse(data);
-
-        if (write_to_file) {
             std::ofstream output_file(output_filename);
             pp.generate(output_file);
+
         }
-        else {
-            pp.generate(std::cout);
+        catch (const Tec::SyntaxException &e) {
+            std::cerr << input_filename << ":" << e.what() << std::endl;
         }
-    }
-    catch (const Tec::SyntaxException &e) {
-        std::cerr << input_filename << ":" << e.what() << std::endl;
     }
 
     return EXIT_SUCCESS;
