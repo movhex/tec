@@ -36,10 +36,10 @@ else()
 endif()
 
 if (build_type STREQUAL debug)
-    target_compile_options(${PROJECT_NAME} PRIVATE -g0 -O3 -s)
     target_compile_definitions(${PROJECT_NAME} PRIVATE TEC_DEBUG)
-elseif (build_type STREQUAL release)
     target_compile_options(${PROJECT_NAME} PRIVATE -g3 -O0 -ggdb3)
+elseif (build_type STREQUAL release)
+    target_compile_options(${PROJECT_NAME} PRIVATE -g0 -O3)
 endif()
 
 target_link_libraries(${PROJECT_NAME}
